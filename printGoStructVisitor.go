@@ -1,12 +1,15 @@
-package main
+package chidleystein
 
 import (
 	"sort"
 )
 
 type PrintGoStructVisitor struct {
-	alreadyVisited      map[string]bool
-	alreadyVisitedNodes map[string]*Node
+	NamePrefix          string
+	NameSuffix          string
+	AttributePrefix     string
+	AlreadyVisited      map[string]bool
+	AlreadyVisitedNodes map[string]*Node
 	globalTagAttributes map[string]([]*FQN)
 	lineChannel         chan string
 	maxDepth            int
@@ -16,9 +19,9 @@ type PrintGoStructVisitor struct {
 	nameSpaceInJsonName bool
 }
 
-func (v *PrintGoStructVisitor) init(lineChannel chan string, maxDepth int, globalTagAttributes map[string]([]*FQN), nameSpaceTagMap map[string]string, useType bool, nameSpaceInJsonName bool) {
-	v.alreadyVisited = make(map[string]bool)
-	v.alreadyVisitedNodes = make(map[string]*Node)
+func (v *PrintGoStructVisitor) Init(lineChannel chan string, maxDepth int, globalTagAttributes map[string]([]*FQN), nameSpaceTagMap map[string]string, useType bool, nameSpaceInJsonName bool) {
+	v.AlreadyVisited = make(map[string]bool)
+	v.AlreadyVisitedNodes = make(map[string]*Node)
 	v.globalTagAttributes = make(map[string]([]*FQN))
 	v.globalTagAttributes = globalTagAttributes
 	v.lineChannel = lineChannel
@@ -32,39 +35,50 @@ func (v *PrintGoStructVisitor) init(lineChannel chan string, maxDepth int, globa
 func (v *PrintGoStructVisitor) Visit(node *Node) bool {
 	v.depth += 1
 
-	if v.AlreadyVisited(node) {
+	if v.IsAlreadyVisited(node) {
 		v.depth += 1
 		return false
 	}
 	v.SetAlreadyVisited(node)
 
-	for _, child := range node.children {
+	for _, child := range node.Children {
 		v.Visit(child)
 	}
 	v.depth += 1
 	return true
 }
 
+func (v *PrintGoStructVisitor) Print(node *Node) {
+	attributes := v.globalTagAttributes[nk(node)]
+	v.lineChannel <- "type " + node.MakeType(v.NamePrefix, v.NameSuffix) + " struct {"
+	makeAttributes(v.lineChannel, v.AttributePrefix, attributes, v.nameSpaceTagMap)
+	v.printInternalFields(node)
+	if node.Space != "" {
+		v.lineChannel <- "\tXMLName  xml.Name `" + makeXmlAnnotation(node.Space, false, node.Name) + " " + makeJsonAnnotation(node.spaceTag, false, node.Name) + "`"
+	}
+	v.lineChannel <- "}\n"
+}
+
 func print(v *PrintGoStructVisitor, node *Node) {
 	attributes := v.globalTagAttributes[nk(node)]
-	v.lineChannel <- "type " + node.makeType(namePrefix, nameSuffix) + " struct {"
-	makeAttributes(v.lineChannel, attributes, v.nameSpaceTagMap)
+	v.lineChannel <- "type " + node.MakeType(v.NamePrefix, v.NameSuffix) + " struct {"
+	makeAttributes(v.lineChannel, v.AttributePrefix, attributes, v.nameSpaceTagMap)
 	v.printInternalFields(node)
-	if node.space != "" {
-		v.lineChannel <- "\tXMLName  xml.Name `" + makeXmlAnnotation(node.space, false, node.name) + " " + makeJsonAnnotation(node.spaceTag, false, node.name) + "`"
+	if node.Space != "" {
+		v.lineChannel <- "\tXMLName  xml.Name `" + makeXmlAnnotation(node.Space, false, node.Name) + " " + makeJsonAnnotation(node.spaceTag, false, node.Name) + "`"
 	}
 	v.lineChannel <- "}\n"
 
 }
 
-func (v *PrintGoStructVisitor) AlreadyVisited(n *Node) bool {
-	_, ok := v.alreadyVisited[nk(n)]
+func (v *PrintGoStructVisitor) IsAlreadyVisited(n *Node) bool {
+	_, ok := v.AlreadyVisited[nk(n)]
 	return ok
 }
 
 func (v *PrintGoStructVisitor) SetAlreadyVisited(n *Node) {
-	v.alreadyVisited[nk(n)] = true
-	v.alreadyVisitedNodes[nk(n)] = n
+	v.AlreadyVisited[nk(n)] = true
+	v.AlreadyVisitedNodes[nk(n)] = n
 }
 
 func (pn *PrintGoStructVisitor) printInternalFields(n *Node) {
@@ -72,21 +86,21 @@ func (pn *PrintGoStructVisitor) printInternalFields(n *Node) {
 
 	var field string
 
-	for i, _ := range n.children {
-		v := n.children[i]
-		field = "\t" + v.makeType(namePrefix, nameSuffix) + " "
+	for i, _ := range n.Children {
+		v := n.Children[i]
+		field = "\t" + v.MakeType(pn.NamePrefix, pn.NameSuffix) + " "
 		if v.repeats {
 			field += "[]*"
 		} else {
 			field += "*"
 		}
-		field += v.makeType(namePrefix, nameSuffix)
+		field += v.MakeType(pn.NamePrefix, pn.NameSuffix)
 
-		jsonAnnotation := makeJsonAnnotation(v.spaceTag, pn.nameSpaceInJsonName, v.name)
-		xmlAnnotation := makeXmlAnnotation(v.space, false, v.name)
+		jsonAnnotation := makeJsonAnnotation(v.spaceTag, pn.nameSpaceInJsonName, v.Name)
+		xmlAnnotation := makeXmlAnnotation(v.Space, false, v.Name)
 		dbAnnotation := ""
 		if addDbMetadata {
-			dbAnnotation = " " + makeDbAnnotation(v.space, false, v.name)
+			dbAnnotation = " " + makeDbAnnotation(v.Space, false, v.Name)
 		}
 
 		annotation := " `" + xmlAnnotation + " " + jsonAnnotation + dbAnnotation + "`"

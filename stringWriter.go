@@ -1,22 +1,26 @@
-package main
+package chidleystein
 
-type stringWriter struct {
-	s string
+var (
+	_ Writer = (*StringWriter)(nil) // compilation check
+)
+
+type StringWriter struct {
+	S string
 }
 
-func (w *stringWriter) open(s string, lineChannel chan string) error {
+func (w *StringWriter) Open(s string, lineChannel chan string) error {
 	doneChannel = make(chan bool)
-	go w.writer(lineChannel, doneChannel)
+	go w.Writer(lineChannel, doneChannel)
 	return nil
 }
 
-func (w *stringWriter) writer(lineChannel chan string, doneChannel chan bool) {
+func (w *StringWriter) Writer(lineChannel chan string, doneChannel chan bool) {
 	for line := range lineChannel {
-		w.s += line + "\n"
+		w.S += line + "\n"
 	}
 	doneChannel <- true
 }
 
-func (w *stringWriter) close() {
+func (w *StringWriter) Close() {
 	_ = <-doneChannel
 }

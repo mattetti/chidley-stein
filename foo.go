@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 import (
 	"encoding/xml"

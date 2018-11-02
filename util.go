@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 import (
 	"bufio"
@@ -74,7 +74,7 @@ func findType(nti *NodeTypeInfo, useType bool) string {
 
 type fqnSorter []*FQN
 
-func makeAttributes(lineChannel chan string, attributes []*FQN, nameSpaceTagMap map[string]string) {
+func makeAttributes(lineChannel chan string, prefix string, attributes []*FQN, nameSpaceTagMap map[string]string) {
 	sort.Sort(fqnSorter(attributes))
 
 	for _, fqn := range attributes {
@@ -86,7 +86,7 @@ func makeAttributes(lineChannel chan string, attributes []*FQN, nameSpaceTagMap 
 			spaceTag = spaceTag + "_"
 		}
 
-		lineChannel <- "\t" + attributePrefix + spaceTag + cleanName(name) + " string `xml:\"" + space + " " + name + ",attr\"  json:\",omitempty\"`"
+		lineChannel <- "\t" + prefix + spaceTag + cleanName(name) + " string `xml:\"" + space + " " + name + ",attr\"  json:\",omitempty\"`"
 	}
 }
 
@@ -107,14 +107,14 @@ func (s fqnSorter) Less(i, j int) bool {
 
 // node key
 func nk(n *Node) string {
-	return nks(n.space, n.name)
+	return nks(n.Space, n.Name)
 }
 
 func nks(space, name string) string {
 	return space + "___" + name
 }
 
-func getFullPath(filename string) string {
+func GetFullPath(filename string) string {
 	if filename == "" {
 		return ""
 	}
@@ -123,5 +123,10 @@ func getFullPath(filename string) string {
 		log.Print("Error opening: " + filename)
 		log.Fatal(err)
 	}
+	defer file.Close()
 	return file.Name()
+}
+
+func CapitalizeFirstLetter(s string) string {
+	return strings.ToUpper(s[0:1]) + s[1:]
 }

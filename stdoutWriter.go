@@ -1,28 +1,28 @@
-package main
+package chidleystein
 
 import (
 	"fmt"
 )
 
-type stdoutWriter struct {
+type StdoutWriter struct {
 }
 
 var doneChannel chan bool
 
-func (w *stdoutWriter) open(s string, lineChannel chan string) error {
+func (w *StdoutWriter) Open(s string, lineChannel chan string) error {
 	doneChannel = make(chan bool)
-	go w.writer(lineChannel, doneChannel)
+	go w.Writer(lineChannel, doneChannel)
 
 	return nil
 }
 
-func (w *stdoutWriter) writer(lineChannel chan string, doneChannel chan bool) {
+func (w *StdoutWriter) Writer(lineChannel chan string, doneChannel chan bool) {
 	for line := range lineChannel {
 		fmt.Println(line)
 	}
 	doneChannel <- true
 }
 
-func (w *stdoutWriter) close() {
+func (w *StdoutWriter) Close() {
 	_ = <-doneChannel
 }

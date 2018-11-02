@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 type JaxbMavenPomInfo struct {
 	AppName string

@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 import (
 	"encoding/xml"
@@ -16,30 +16,30 @@ var nameMapper = map[string]string{
 var DiscoveredOrder = 0
 
 type Extractor struct {
-	globalTagAttributes    map[string]([]*FQN)
-	globalTagAttributesMap map[string]bool
-	globalNodeMap          map[string]*Node
-	namePrefix             string
-	nameSpaceTagMap        map[string]string
+	GlobalTagAttributes    map[string]([]*FQN)
+	GlobalTagAttributesMap map[string]bool
+	GlobalNodeMap          map[string]*Node
+	NamePrefix             string
+	NameSpaceTagMap        map[string]string
 	nameSuffix             string
-	reader                 io.Reader
-	root                   *Node
-	firstNode              *Node
+	Reader                 io.Reader
+	Root                   *Node
+	FirstNode              *Node
 	hasStartElements       bool
 	useType                bool
 	progress               bool
 }
 
-func (ex *Extractor) extract() error {
-	ex.globalTagAttributes = make(map[string]([]*FQN))
-	ex.globalTagAttributesMap = make(map[string]bool)
-	ex.nameSpaceTagMap = make(map[string]string)
-	ex.globalNodeMap = make(map[string]*Node)
+func (ex *Extractor) Extract() error {
+	ex.GlobalTagAttributes = make(map[string]([]*FQN))
+	ex.GlobalTagAttributesMap = make(map[string]bool)
+	ex.NameSpaceTagMap = make(map[string]string)
+	ex.GlobalNodeMap = make(map[string]*Node)
 
-	decoder := xml.NewDecoder(ex.reader)
+	decoder := xml.NewDecoder(ex.Reader)
 
-	ex.root = new(Node)
-	ex.root.initialize("root", "", "", nil)
+	ex.Root = new(Node)
+	ex.Root.initialize("root", "", "", nil)
 
 	ex.hasStartElements = false
 
@@ -71,7 +71,7 @@ func (ex *Extractor) extract() error {
 
 func handleTokens(tChannel chan xml.Token, ex *Extractor, handleTokensDoneChannel chan bool) {
 	depth := 0
-	thisNode := ex.root
+	thisNode := ex.Root
 	first := true
 	var progressCounter int64 = 0
 
@@ -79,7 +79,7 @@ func handleTokens(tChannel chan xml.Token, ex *Extractor, handleTokensDoneChanne
 		switch element := token.(type) {
 		case xml.Comment:
 			if DEBUG {
-				log.Print(thisNode.name)
+				log.Print(thisNode.Name)
 				log.Printf("Comment: %+v\n", string(element))
 			}
 
@@ -107,7 +107,7 @@ func handleTokens(tChannel chan xml.Token, ex *Extractor, handleTokensDoneChanne
 			thisNode.tempCharData = ""
 			if first {
 				first = false
-				ex.firstNode = thisNode
+				ex.FirstNode = thisNode
 			}
 			depth += 1
 			if progress {
@@ -118,7 +118,7 @@ func handleTokens(tChannel chan xml.Token, ex *Extractor, handleTokensDoneChanne
 
 		case xml.CharData:
 			if DEBUG {
-				log.Print(thisNode.name)
+				log.Print(thisNode.Name)
 				log.Printf("CharData: [%+v]\n", string(element))
 			}
 
@@ -145,7 +145,7 @@ func handleTokens(tChannel chan xml.Token, ex *Extractor, handleTokensDoneChanne
 
 			for key, c := range thisNode.childCount {
 				if c > 1 {
-					thisNode.children[key].repeats = true
+					thisNode.Children[key].repeats = true
 				}
 				thisNode.childCount[key] = 0
 			}
@@ -169,7 +169,7 @@ func space(n int) string {
 func (ex *Extractor) findNewNameSpaces(attrs []xml.Attr) {
 	for _, attr := range attrs {
 		if attr.Name.Space == "xmlns" {
-			ex.nameSpaceTagMap[attr.Value] = attr.Name.Local
+			ex.NameSpaceTagMap[attr.Value] = attr.Name.Local
 		}
 	}
 }
@@ -186,45 +186,45 @@ func (ex *Extractor) handleStartElement(startElement xml.StartElement, thisNode 
 	var attributes []*FQN
 	key := nks(space, name)
 
-	child, ok := thisNode.children[key]
+	child, ok := thisNode.Children[key]
 	// Does thisNode node already exist as child
 	//fmt.Println(space, name)
 	if ok {
 		thisNode.childCount[key] += 1
-		attributes, ok = ex.globalTagAttributes[key]
+		attributes, ok = ex.GlobalTagAttributes[key]
 	} else {
 		// if thisNode node does not already exist as child, it may still exist as child on other node:
-		child, ok = ex.globalNodeMap[key]
+		child, ok = ex.GlobalNodeMap[key]
 		if !ok {
 			child = new(Node)
 			DiscoveredOrder += 1
-			child.discoveredOrder = DiscoveredOrder
-			ex.globalNodeMap[key] = child
-			spaceTag, _ := ex.nameSpaceTagMap[space]
+			child.DiscoveredOrder = DiscoveredOrder
+			ex.GlobalNodeMap[key] = child
+			spaceTag, _ := ex.NameSpaceTagMap[space]
 			child.initialize(name, space, spaceTag, thisNode)
 			thisNode.childCount[key] = 1
 
 			attributes = make([]*FQN, 0, 2)
-			ex.globalTagAttributes[key] = attributes
+			ex.GlobalTagAttributes[key] = attributes
 		} else {
-			attributes = ex.globalTagAttributes[key]
+			attributes = ex.GlobalTagAttributes[key]
 		}
-		thisNode.children[key] = child
+		thisNode.Children[key] = child
 	}
 	child.pushParent(thisNode)
 
 	for _, attr := range startElement.Attr {
 		bigKey := key + "_" + attr.Name.Space + "_" + attr.Name.Local
-		_, ok := ex.globalTagAttributesMap[bigKey]
+		_, ok := ex.GlobalTagAttributesMap[bigKey]
 		if !ok {
 			fqn := new(FQN)
 			fqn.name = attr.Name.Local
 			fqn.space = attr.Name.Space
 			attributes = append(attributes, fqn)
-			ex.globalTagAttributesMap[bigKey] = true
+			ex.GlobalTagAttributesMap[bigKey] = true
 		}
 	}
-	ex.globalTagAttributes[key] = attributes
+	ex.GlobalTagAttributes[key] = attributes
 	return child
 }
 

@@ -1,22 +1,20 @@
-package main
+package chidleystein
 
-import (
 //"log"
-)
 
 type Node struct {
-	name            string
-	space           string
+	Name            string
+	Space           string
 	spaceTag        string
 	parent          *Node
 	parents         []*Node
-	children        map[string]*Node
+	Children        map[string]*Node
 	childCount      map[string]int
 	repeats         bool
 	nodeTypeInfo    *NodeTypeInfo
 	hasCharData     bool
 	tempCharData    string
-	discoveredOrder int
+	DiscoveredOrder int
 }
 
 type NodeVisitor interface {
@@ -29,10 +27,10 @@ func (n *Node) initialize(name string, space string, spaceTag string, parent *No
 	n.parent = parent
 	n.parents = make([]*Node, 0, 0)
 	n.pushParent(parent)
-	n.name = name
-	n.space = space
+	n.Name = name
+	n.Space = space
 	n.spaceTag = spaceTag
-	n.children = make(map[string]*Node)
+	n.Children = make(map[string]*Node)
 	n.childCount = make(map[string]int)
 	n.nodeTypeInfo = new(NodeTypeInfo)
 	n.nodeTypeInfo.initialize()
@@ -44,15 +42,15 @@ func (n *Node) makeName() string {
 	if n.spaceTag != "" {
 		spaceTag = "_" + n.spaceTag
 	}
-	return capitalizeFirstLetter(cleanName(n.name)) + spaceTag
+	return capitalizeFirstLetter(cleanName(n.Name)) + spaceTag
 }
 
-func (n *Node) makeType(prefix string, suffix string) string {
-	return capitalizeFirstLetter(makeTypeGeneric(n.name, n.spaceTag, prefix, suffix, false))
+func (n *Node) MakeType(prefix string, suffix string) string {
+	return capitalizeFirstLetter(makeTypeGeneric(n.Name, n.spaceTag, prefix, suffix, false))
 }
 
 func (n *Node) makeJavaType(prefix string, suffix string) string {
-	return capitalizeFirstLetter(makeTypeGeneric(n.name, n.spaceTag, prefix, suffix, true))
+	return capitalizeFirstLetter(makeTypeGeneric(n.Name, n.spaceTag, prefix, suffix, true))
 }
 
 func (n *Node) peekParent() *Node {

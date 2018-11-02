@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 const JavaString = "String"
 const JavaBoolean = "boolean"

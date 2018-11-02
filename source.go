@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 import (
 	"bufio"
@@ -10,9 +10,9 @@ import (
 
 type Source interface {
 	io.Closer
-	newSource(name string) error
-	getName() string
-	getReader() io.Reader
+	NewSource(name string) error
+	GetName() string
+	GetReader() io.Reader
 	copySource() (Source, error)
 }
 
@@ -41,11 +41,11 @@ func (us *StdinSource) copySource() (Source, error) {
 	return nil, err
 }
 
-func (us *StdinSource) getName() string {
+func (us *StdinSource) GetName() string {
 	return ""
 }
 
-func (us *StdinSource) newSource(name string) error {
+func (us *StdinSource) NewSource(name string) error {
 	us.reader = bufio.NewReader(os.Stdin)
 	return nil
 }
@@ -54,22 +54,22 @@ func (us *StdinSource) Close() error {
 	return nil
 }
 
-func (us *StdinSource) getReader() io.Reader {
+func (us *StdinSource) GetReader() io.Reader {
 	return us.reader
 }
 
 //UrlSource impl
 func (us *UrlSource) copySource() (Source, error) {
 	copy := new(UrlSource)
-	err := copy.newSource(us.name)
+	err := copy.NewSource(us.name)
 	return copy, err
 }
 
-func (us *UrlSource) getName() string {
+func (us *UrlSource) GetName() string {
 	return us.name
 }
 
-func (us *UrlSource) newSource(name string) error {
+func (us *UrlSource) NewSource(name string) error {
 	us.name = name
 	var err error
 
@@ -97,22 +97,22 @@ func (us UrlSource) Close() error {
 	return nil
 }
 
-func (us *UrlSource) getReader() io.Reader {
+func (us *UrlSource) GetReader() io.Reader {
 	return us.reader
 }
 
 // FileSource impl
 func (fs *FileSource) copySource() (Source, error) {
 	copy := new(FileSource)
-	err := copy.newSource(fs.name)
+	err := copy.NewSource(fs.name)
 	return copy, err
 }
 
-func (fs *FileSource) getName() string {
+func (fs *FileSource) GetName() string {
 	return fs.name
 }
 
-func (fs *FileSource) newSource(name string) error {
+func (fs *FileSource) NewSource(name string) error {
 	fs.name = name
 	var err error
 	fs.reader, fs.file, err = genericReader(name)
@@ -124,6 +124,6 @@ func (fs *FileSource) Close() error {
 	return fs.file.Close()
 }
 
-func (fs FileSource) getReader() io.Reader {
+func (fs FileSource) GetReader() io.Reader {
 	return fs.reader
 }

@@ -1,4 +1,4 @@
-package main
+package chidleystein
 
 import (
 	"bufio"
@@ -32,10 +32,10 @@ func (v *PrintJavaJaxbVisitor) Visit(node *Node) bool {
 	class.init()
 	class.Date = v.Date
 	class.PackageName = v.javaPackage
-	class.ClassName = v.namePrefix + cleanName(capitalizeFirstLetter(node.name))
+	class.ClassName = v.namePrefix + cleanName(capitalizeFirstLetter(node.Name))
 	class.HasValue = node.hasCharData
 	class.ValueType = findJavaType(node.nodeTypeInfo, v.useType)
-	class.Name = node.name
+	class.Name = node.Name
 
 	for _, fqn := range attributes {
 		jat := new(JaxbAttribute)
@@ -51,17 +51,17 @@ func (v *PrintJavaJaxbVisitor) Visit(node *Node) bool {
 		class.Attributes = append(class.Attributes, jat)
 	}
 
-	for _, child := range node.children {
+	for _, child := range node.Children {
 		jaf := new(JaxbField)
-		jaf.Name = child.name
-		cleanName := cleanName(child.name)
+		jaf.Name = child.Name
+		cleanName := cleanName(child.Name)
 		jaf.NameUpper = capitalizeFirstLetter(cleanName)
 		if v.namePrefix != "" {
 			jaf.NameLower = lowerFirstLetter(v.namePrefix) + capitalizeFirstLetter(cleanName)
 		} else {
 			jaf.NameLower = lowerFirstLetter(cleanName)
 		}
-		jaf.NameSpace = child.space
+		jaf.NameSpace = child.Space
 		jaf.Repeats = child.repeats
 		jaf.TypeName = child.makeJavaType(v.namePrefix, "")
 		class.Fields = append(class.Fields, jaf)
@@ -70,7 +70,7 @@ func (v *PrintJavaJaxbVisitor) Visit(node *Node) bool {
 
 	printJaxbClass(class, v.javaDir+"/xml")
 
-	for _, child := range node.children {
+	for _, child := range node.Children {
 		v.Visit(child)
 	}
 
